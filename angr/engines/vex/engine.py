@@ -453,18 +453,18 @@ class SimEngineVEX(SimEngine):
 
         # phase 4: get bytes
         if insn_bytes is not None:
-            buff, size = insn_bytes, len(insn_bytes)
+            buff = insn_bytes
         else:
-            buff, size = self._load_bytes(addr, size, state, clemory)
+            buff = self._load_bytes(addr, size, state, clemory)
 
-        if not buff or size == 0:
+        if not buff:
             raise SimEngineError("No bytes in memory for block starting at %#x." % addr)
 
         # phase 5: call into pyvex
         l.debug("Creating pyvex.IRSB of arch %s at %#x", arch.name, addr)
         try:
             for subphase in xrange(2):
-                irsb = pyvex.lift(buff, arch, addr + thumb,
+                irsb = pyvex.lift(arch, addr + thumb, buff,
                                   bytes_offset=thumb,
                                   traceflags=traceflags,
                                   opt_level=opt_level)
@@ -517,7 +517,7 @@ class SimEngineVEX(SimEngine):
 
         if not smc or not state:
             try:
-                buff, size = clemory.read_bytes_c(addr)
+                buff = clemory.read_bytes(addr, size)
             except KeyError:
                 pass
 
@@ -525,7 +525,6 @@ class SimEngineVEX(SimEngine):
         if size == 0 and state:
             if addr in state.memory and addr + max_size - 1 in state.memory:
                 buff = state.se.eval(state.memory.load(addr, max_size, inspect=False), cast_to=str)
-                size = max_size
             else:
                 good_addrs = []
                 for i in xrange(max_size):
@@ -535,10 +534,7 @@ class SimEngineVEX(SimEngine):
                         break
 
                 buff = ''.join(chr(state.se.eval(state.memory.load(i, 1, inspect=False))) for i in good_addrs)
-                size = len(buff)
-
-        size = min(max_size, size)
-        return buff, size
+        return buff
 
     def _first_stoppoint(self, irsb):
         """
