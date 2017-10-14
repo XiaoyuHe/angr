@@ -206,7 +206,6 @@ class SimEngineVEX(SimEngine):
         for stmt_idx, stmt in enumerate(ss):
             if isinstance(stmt, pyvex.IRStmt.IMark):
                 insn_addrs.append(stmt.addr + stmt.delta)
-
             if stmt_idx < skip_stmts:
                 l.debug("Skipping statement %d", stmt_idx)
                 continue
@@ -453,9 +452,9 @@ class SimEngineVEX(SimEngine):
 
         # phase 4: get bytes
         if insn_bytes is not None:
-            buff = insn_bytes
+            buff, size = insn_bytes, len(insn_bytes)
         else:
-            buff = self._load_bytes(addr, size, state, clemory)
+            buff, size = self._load_bytes(addr, size, state, clemory)
 
         if not buff or size == 0:
             raise SimEngineError("No bytes in memory for block starting at %#x." % addr)
@@ -519,7 +518,7 @@ class SimEngineVEX(SimEngine):
 
         if not smc or not state:
             try:
-                buff, size = clemory.read_bytes_c(addr, size)
+                buff, size = clemory.read_bytes_c(addr)
             except KeyError:
                 pass
 
